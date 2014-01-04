@@ -1,5 +1,13 @@
 #include <Wire.h>
-#include "RWXFuge.h"
+#include <SPI.h>
+#include <Ethernet.h>
+#include "RWXBioFuge.h"
+
+// lab of things
+byte mac[] = {  0x90, 0xA2, 0xDA, 0x0E, 0xD6, 0xEE }; // Mac address
+IPAddress server(192,168,1,10); // Server
+// Initialize the Ethernet client library
+EthernetClient client;
 
 // set the LCD address to 0x27 for a 16 chars and 2 line display
 LiquidCrystal_I2C lcd(0x27,16,2);
@@ -44,7 +52,7 @@ int InfraPin = 7; // Infrared sensor pin
 MachineState state = StateProgramming;
 
 void setup() {
-	// update clock
+      	// update clock
 	lastTick = millis();
 
 	// init I2C
@@ -68,6 +76,29 @@ void setup() {
 	// initialize output
 	pinMode(6, OUTPUT);
 	digitalWrite(6, LOW);
+
+        // Start Ethernet connection
+        if (Ethernet.begin(mac) == 0) 
+        {
+                Serial.println("Failed to configure Ethernet using DHCP");
+        }
+        if (client.connect(server, 80)) 
+        {
+                Serial.println("connected");
+                // Make a HTTP request
+                client.println("GET /init HTTP/1.0");
+                client.println();
+                // Print reply
+                if (client.available()) 
+                {
+                        char c = client.read();
+                        Serial.print(c);
+                }
+        } 
+        else {
+                // if you didn't get a connection to the server:
+                Serial.println("connection failed");
+        }  
 }
 
 void loop() {
@@ -75,9 +106,6 @@ void loop() {
 	uint32_t time = millis();
 	uint16_t dt = time-lastTick;
 	lastTick = time;
-
-	// Machine logic
-	machineUpdate(dt);
 
 	// Measure speed
 	measureSpeed(dt);
@@ -91,6 +119,20 @@ void loop() {
 	}
 	if(digitalRead(5) == LOW) {
 		Locked = true;
+	}
+
+	// Machine logic
+	machineUpdate(dt);
+
+	// Button updates
+	if(digitalRead(3) == HIGH) {
+		Start = false;
+	}
+	if(digitalRead(4) == HIGH) {
+		Short = false;
+	}
+	if(digitalRead(5) == HIGH) {
+		Locked = false;
 	}
 
 	// Check for panic
@@ -287,27 +329,68 @@ static void measureSpeed(uint16_t dt)
 
 static void printStatus(uint16_t dt) 
 {
+        // Print to LCD
 	lcd.clear();
 	lcd.setCursor(0,0);
 	lcd.print(F("RWXBioFuge: "));
-	lcd.print(FStr(statenames[state]));
+	lcd.print(statenames[state]);
 	lcd.setCursor(1,0);
 	lcd.print(F("Time: "));
 	lcd.print(dt);
 	lcd.print(F("RPM: "));
 	lcd.print(CurrentRPM);
+
+        // Make a HTTP request
+        client.print("GET /status?a=Fuge&t=");
+        client.print(dt);
+        client.print("&rpm=");
+        client.print(CurrentRPM);
+        client.println(" HTTP/1.0");
+        client.println();
 }
 
 static void printInfo(char* line1, char* line2) 
 {
+        // Print to LCD
 	lcd.clear();
 	lcd.setCursor(0,0);
 	lcd.print(line1);
 	lcd.setCursor(1,0);
 	lcd.print(line2);
+
+        // Make a HTTP request
+        client.print("GET /status?a=Fuge&l1=");
+        client.print(URLEncode(line1));
+        client.print("&l2=");
+        client.print(URLEncode(line2));
+        client.println(" HTTP/1.0");
+        client.println();
 }
 
 static void stateChange(MachineState newstate) 
 {
 	state = newstate;
+}
+
+String URLEncode(const char* msg)
+{
+  const char *hex = "0123456789abcdef";
+  String encodedMsg = "";
+  while (*msg!='\0')
+  {
+     if( ('a' <= *msg && *msg <= 'z') 
+               || ('A' <= *msg && *msg <= 'Z')
+               || ('0' <= *msg && *msg <= '9') )
+     {
+       encodedMsg += *msg;
+     }
+     else
+     {
+        encodedMsg += '%';
+        encodedMsg += hex[*msg >> 4];
+        encodedMsg += hex[*msg & 15];
+     }
+     msg++;
+  }
+  return encodedMsg;
 }
