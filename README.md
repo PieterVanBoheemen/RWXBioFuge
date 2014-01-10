@@ -16,3 +16,8 @@ Output:
 - Serial USB
 - Ethernet
 - I2C 16x2 LCD display
+
+Credits:
+This project has been greatly inspired by the work of:
+- Cathal Garvey - Dremelfuge
+- Karlin Yeh - OpenFuge
