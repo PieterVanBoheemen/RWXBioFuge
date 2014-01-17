@@ -1,7 +1,10 @@
+// WARNING: Code is in development, not fully tested!!
+
 #include <Wire.h>
 #include <SPI.h>
 #include <Ethernet.h>
 #include "RWXBioFuge.h"
+#include <Servo.h>
 
 // lab of things
 byte mac[] = {  0x90, 0xA2, 0xDA, 0x0E, 0xD6, 0xEE }; // Mac address
@@ -19,12 +22,14 @@ static int Settings[2] = { 0, 0}; // RPM goal, time
 boolean Locked = false; // Lid lock
 boolean Short = false; // Short spin button
 boolean Start = false; // Start button
+boolean Stop = false; // Stop button
 
 // Clock vars
 uint32_t lastTick = 0; // Global Clock
 uint32_t stateStartTime = 0; // Start state Clock
 uint32_t StateDt; // Time within a state
 uint32_t PhaseStartTime = 0;
+int LCDTime = 0;
 
 // Potentiometer pins
 int RPMpotPin = 1;
@@ -36,10 +41,13 @@ int PrevRPM = 0; // Previous RPM
 double RPMtime = 0; // RPM time
 double RPMnow = 0; // Measured RPM
 double Gforce = 0; // Calculated GForce
-int InfraPin = 7; // Infrared sensor pin
+int InfraPin = 8; // Infrared sensor pin
 
 // set initial state
 const char* state = "StateProgramming";
+
+// ESC control
+Servo esc;
 
 void setup() {
       	// update clock
@@ -65,10 +73,10 @@ void setup() {
 	pinMode(3, INPUT); // Start button
 	pinMode(4, INPUT); // Short button
 	pinMode(5, INPUT); // Limit switch of the lid
+        pinMode(6, INPUT); // Stop button
 	
 	// initialize output
-	pinMode(6, OUTPUT);
-	digitalWrite(6, LOW);
+        esc.attach(7);
 
 /*
         // Start Ethernet connection
@@ -102,24 +110,25 @@ void loop() {
 	uint16_t dt = time-lastTick;
 	lastTick = time;
 
-        Serial.println(state);
-        Serial.println(dt);
-
-	// Measure speed
-	measureSpeed(dt);
-
 	// Button updates
 	if(digitalRead(3) == LOW) {
 		Start = true;
-                Serial.println("Start");
 	}
 	if(digitalRead(4) == LOW) {
 		Short = true;
-                Serial.println("Short");
 	}
 	if(digitalRead(5) == LOW) {
 		Locked = true;
 	}
+        if(digitalRead(6) == LOW) {
+                Stop = true;
+        }
+
+        if(Stop == true)
+        {
+                stateChange("StateRampdown");
+                Serial.println("Stop");
+        }
 
 	// Machine logic
 	machineUpdate(dt);
@@ -133,8 +142,10 @@ void loop() {
 	}
 	if(digitalRead(5) == HIGH) {
 		Locked = false;
-                Serial.println("Unlocked");
 	}
+        if(digitalRead(6) == HIGH) {
+                Stop = false;
+        }
 
 	// Check for panic
 	if(state != "StateProgramming" && state != "StatePanic")
@@ -151,25 +162,34 @@ void machineUpdate(uint16_t dt) {
 	// fixed state machine logic
 
 		if(state == "StateProgramming") {
+                        // Arm ESC
+                        esc.write(21);
+  
 			// Responsive to all interactions
 
 			// Time
-			Settings[1] = map(analogRead(TimepotPin), 0, 1023, 0, 60);
+			int TimepotVal = analogRead(TimepotPin);
+                        if(TimepotVal < 120) Settings[1] = map(TimepotVal, 0, 120, 0, 60);
+                        else if(TimepotVal < 360) Settings[1] = map(TimepotVal, 120, 300, 60, 300);
+                        else if(TimepotVal < 720) Settings[1] = map(TimepotVal, 300, 720, 300, 1800);
+                        else if(TimepotVal < 1000) Settings[1] = map(TimepotVal, 720, 1023, 1800, 3600);
+                        else if(TimepotVal > 999) Settings[1] = -2;
+                        else Settings[1] = 0;
+
                         lcd.setCursor(0,0);
                         lcd.print("Time");
 			lcd.setCursor(6,0);
-                        if(Settings[1] < 10) lcd.print(" ");
-                        if(Settings[1] < 100) lcd.print(" ");
-			lcd.print(Settings[1]);
+                        lcd.print(time(Settings[1]));
 
 			// RPM
-			Settings[0] = map(analogRead(RPMpotPin), 0, 1023, 0, 100);
+			Settings[0] = map(analogRead(RPMpotPin), 0, 1000, 0, 100);
                         lcd.setCursor(0,1);
-                        lcd.print("RPM");
+                        lcd.print("Speed");
 			lcd.setCursor(6,1);
                         if(Settings[0] < 10) lcd.print(" ");
                         if(Settings[0] < 100) lcd.print(" ");
 			lcd.print(Settings[0]);
+                        lcd.print("%");
 
 			// If user presses Start button
 			if(Start)
@@ -195,6 +215,9 @@ void machineUpdate(uint16_t dt) {
 			// Check lid before spin
 			if(Locked) 
 			{
+                                // Remap speed setting
+                                Settings[0] = map(Settings[0],0,100,21,165);
+                                
 				// Continue to next state
 				stateChange("StateRampup");
 			}
@@ -210,24 +233,19 @@ void machineUpdate(uint16_t dt) {
 		}
 		
 		if(state == "StateRampup") {
-			// Start spinning the rotor	
-			printStatus();
+			// Start spinning the rotor
+	                measureSpeed(dt);	
+			printStatus(dt);
 
 			// Send pulses to ESC
-			for(int i=0; i<10; i++)
-			{
-				digitalWrite(6, HIGH);
-				delayMicroseconds(1500+(i*50));
-				digitalWrite(6, LOW);
-				delay(18);
-				delayMicroseconds(500-(i*50));
-			}
+                        esc.write(Settings[0]);
+                        delay(1000);
 
 			// If RPM reaches target
-			if(CurrentRPM > Settings[0])
-			{
+			//if(CurrentRPM > Settings[0])
+			//{
 				stateChange("StateSpinSteady");
-			}
+			//}
                         
                         // Check for end of short
 			if(Settings[1] < 0) 
@@ -241,18 +259,16 @@ void machineUpdate(uint16_t dt) {
 
 		if(state == "StateSpinSteady") {
 			// Maintain constant speed
-			printStatus();
+	                measureSpeed(dt);
+			printStatus(dt);
 	
 			// Send pulse to ESC
-			digitalWrite(6, HIGH);
-			delayMicroseconds(1500+(Settings[0]*5));
-			digitalWrite(6, LOW);
-			delayMicroseconds(1500+(Settings[0]*5));
+                        esc.write(Settings[0]);
 
 			// Time in current state
 			StateDt = millis() - PhaseStartTime;
 
-			// Check for end of Short spin
+			// Check for end of Short or Eternal spin
 			if(Settings[1] < 0) 
 			{
 				if(!Short && Settings[1] == -1) 
@@ -263,7 +279,7 @@ void machineUpdate(uint16_t dt) {
 			else 
 			{
 				// Spin down after time runs out
-				if(StateDt > Settings[1]) 
+				if(StateDt > Settings[1]*1000) 
 				{
 					stateChange("StateRampdown");
 				}
@@ -272,17 +288,11 @@ void machineUpdate(uint16_t dt) {
 
 		if(state == "StateRampdown") {
 			// Slowly reduce rotor speed
-			printStatus();
+	                measureSpeed(dt);
+			printStatus(dt);
 
 			// Send pulse to ESC
-			for(int j=0;j<50;j++)
-			{
-				digitalWrite(6, HIGH);
-				delayMicroseconds(1500);
-				digitalWrite(6, LOW);
-				delay(18);
-				delayMicroseconds(500);
-			}
+                        esc.write(0);
 
 			// Continue when rotor stops
 			if(CurrentRPM < 1)
@@ -304,10 +314,11 @@ void machineUpdate(uint16_t dt) {
 
 		if(state == "StatePanic") {
 			// Stop rotor
-			digitalWrite(6, LOW);
+			digitalWrite(7, LOW);
 
 			// Print info
 			printInfo("PANIC: Emergency break","Lid opened!");
+                        delay(1000);
 
 			if(CurrentRPM < 1)
 			{
@@ -319,7 +330,6 @@ void machineUpdate(uint16_t dt) {
 
 static void measureSpeed(uint16_t dt) 
 { 
-  /*
 	PrevRPM = RPMnow;
 	RPMtime = pulseIn(InfraPin,HIGH);
 	RPMtime+= pulseIn(InfraPin,LOW);
@@ -334,20 +344,24 @@ static void measureSpeed(uint16_t dt)
 	RPMnow *= 60;
 
 	CurrentRPM = (CurrentRPM + RPMnow + PrevRPM) / 3;
-*/
 }
 
-static void printStatus() 
+static void printStatus(uint16_t dt) 
 {
-        // Print to LCD
-	lcd.clear();
-	lcd.setCursor(0,0);
-	lcd.print(state);
-	lcd.setCursor(0,1);
-	lcd.print(F("Time: "));
-	lcd.print(time(StateDt));
-	lcd.print(F("RPM: "));
-	lcd.print(CurrentRPM);
+        LCDTime += dt;
+        if(LCDTime > 1000) {
+                LCDTime = 0;
+                // Print to LCD
+          	lcd.clear();
+          	lcd.setCursor(0,0);
+          	lcd.print(state);
+          	lcd.setCursor(0,1);
+          	//lcd.print(F(""));
+          	lcd.print(time(StateDt/1000));
+          	lcd.print(F(" "));
+          	lcd.print(CurrentRPM);
+        }
+
 /*
         // Make a HTTP request
         client.print("GET /status?a=Fuge&t=");
@@ -409,24 +423,32 @@ String URLEncode(const char* msg)
 }
 
 String time(long val){  
-         int days = elapsedDays(val);
-         int hours = numberOfHours(val);
-         int minutes = numberOfMinutes(val);
-         int seconds = numberOfSeconds(val);
-        
-          String returnval = "";
-        
-          // digital clock display of current time 
-          returnval = printDigits(hours) + ":" + printDigits(minutes) + ":" + printDigits(seconds);
-          
-          return returnval;
-}
+         if(val < 0) 
+         {
+              return "infinite";
+         }
+         else 
+         {
+             int days = elapsedDays(val);
+             int hours = numberOfHours(val);
+             int minutes = numberOfMinutes(val);
+             int seconds = numberOfSeconds(val);
+            
+              String returnval = "";
+            
+              // digital clock display of current time 
+              returnval = printDigits(hours) + ":" + printDigits(minutes) + ":" + printDigits(seconds);
+              
+              return returnval;
+         }
+    }
 
 String printDigits(byte digits){
           // utility function for digital clock display: prints colon and leading 0
+          String returnval = "";
           if(digits < 10)
                     returnval += "0";
           returnval += digits; 
          
-         return returnval; 
+          return returnval; 
 }
