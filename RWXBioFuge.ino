@@ -202,7 +202,7 @@ void machineUpdate(uint16_t dt) {
 			if(Short)
 			{
 				// Set short
-				Settings[0] = 9000; // RPM
+				Settings[0] = 100; // RPM
                                 Settings[1] = -1; // Time
 				// Continue to next state
 				stateChange("StateLock");
@@ -216,7 +216,7 @@ void machineUpdate(uint16_t dt) {
 			if(Locked) 
 			{
                                 // Remap speed setting
-                                Settings[0] = map(Settings[0],0,100,21,165);
+                                Settings[0] = map(Settings[0],0,100,30,165);
                                 
 				// Continue to next state
 				stateChange("StateRampup");
@@ -234,18 +234,23 @@ void machineUpdate(uint16_t dt) {
 		
 		if(state == "StateRampup") {
 			// Start spinning the rotor
-	                measureSpeed(dt);	
-			printStatus(dt);
 
 			// Send pulses to ESC
+                        for(int i=30;i<Settings[0];i+=10) {
+                                esc.write(i);
+                                
+                                // update LCD
+                                measureSpeed(dt);	
+			        printStatus(dt);
+
+                                // wait a little
+                                delay(300);       
+                        }
+                        
                         esc.write(Settings[0]);
-                        delay(1000);
 
 			// If RPM reaches target
-			//if(CurrentRPM > Settings[0])
-			//{
-				stateChange("StateSpinSteady");
-			//}
+			stateChange("StateSpinSteady");
                         
                         // Check for end of short
 			if(Settings[1] < 0) 
@@ -288,9 +293,19 @@ void machineUpdate(uint16_t dt) {
 
 		if(state == "StateRampdown") {
 			// Slowly reduce rotor speed
-	                measureSpeed(dt);
-			printStatus(dt);
 
+			// Send pulses to ESC
+                        for(int i=Settings[0];i>21;i-=10) {
+                                esc.write(i);
+                                
+                                // update LCD
+                                measureSpeed(dt);	
+			        printStatus(dt);
+
+                                // wait a little
+                                delay(300);       
+                        }
+                        
 			// Send pulse to ESC
                         esc.write(0);
 
@@ -314,11 +329,11 @@ void machineUpdate(uint16_t dt) {
 
 		if(state == "StatePanic") {
 			// Stop rotor
-			digitalWrite(7, LOW);
+			esc.write(0);
 
 			// Print info
 			printInfo("PANIC: Emergency break","Lid opened!");
-                        delay(1000);
+                        measureSpeed(dt);
 
 			if(CurrentRPM < 1)
 			{
@@ -330,6 +345,7 @@ void machineUpdate(uint16_t dt) {
 
 static void measureSpeed(uint16_t dt) 
 { 
+        // Derived from code of Karlin Yeh
 	PrevRPM = RPMnow;
 	RPMtime = pulseIn(InfraPin,HIGH);
 	RPMtime+= pulseIn(InfraPin,LOW);
@@ -401,6 +417,7 @@ static void stateChange(const char* newstate)
 
 String URLEncode(const char* msg)
 {
+        // Derived from http://hardwarefun.com/tutorials/url-encoding-in-arduino
         const char *hex = "0123456789abcdef";
         String encodedMsg = "";
         while (*msg!='\0')
