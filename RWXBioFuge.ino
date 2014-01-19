@@ -148,7 +148,7 @@ void loop() {
         }
 
 	// Check for panic
-	if(state != "StateProgramming" && state != "StatePanic")
+	if(state != "StateProgramming" && state != "StatePanic" && state != "StateUnlock")
 	{
 		if(Locked == false)
 		{
@@ -295,7 +295,7 @@ void machineUpdate(uint16_t dt) {
 			// Slowly reduce rotor speed
 
 			// Send pulses to ESC
-                        for(int i=Settings[0];i>21;i-=10) {
+                        for(int i=Settings[0];i>21;i=i-10) {
                                 esc.write(i);
                                 
                                 // update LCD
@@ -310,10 +310,7 @@ void machineUpdate(uint16_t dt) {
                         esc.write(0);
 
 			// Continue when rotor stops
-			if(CurrentRPM < 1)
-			{
-				stateChange("StateUnlock");
-			}
+			stateChange("StateUnlock");
 		}
 	
 		if(state == "StateUnlock") {
@@ -335,10 +332,7 @@ void machineUpdate(uint16_t dt) {
 			printInfo("PANIC: Emergency break","Lid opened!");
                         measureSpeed(dt);
 
-			if(CurrentRPM < 1)
-			{
-				stateChange("StateUnlock");
-			}		
+			stateChange("StateUnlock");		
 		}
 	
 }
