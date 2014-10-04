@@ -1,16 +1,62 @@
-// WARNING: Code is in development, not fully tested!!
+// WARNING: Code is in development, use at your won risk
 
 #include <Wire.h>
 #include <SPI.h>
 #include <Ethernet.h>
+#include "avr/pgmspace.h" // new include
 #include "RWXBioFuge.h"
 #include <Servo.h>
+#include "WebServer.h"
 
-// lab of things
-byte mac[] = {  0x90, 0xA2, 0xDA, 0x0E, 0xD6, 0xEE }; // Mac address
-IPAddress server(192,168,1,10); // Server
-// Initialize the Ethernet client library
-EthernetClient client;
+// rotary counter
+#include <ByteBuffer.h>
+#include <ooPinChangeInt.h>
+#define DEBUG
+#ifdef DEBUG
+ByteBuffer printBuffer(200);
+#endif
+#include <AdaEncoder.h>
+#define ENCA_a 8
+#define ENCA_b 9
+#define ENCB_a A0
+#define ENCB_b A1
+AdaEncoder encoderA = AdaEncoder('a', ENCA_a, ENCA_b);
+AdaEncoder encoderB = AdaEncoder('b', ENCB_a, ENCB_b);
+int8_t clicks=0;
+char id=0;
+int time_counter = 0;
+int rpm_counter = 0;
+
+// network configuration.  gateway and subnet are optional.
+/* Mac Address */
+static uint8_t mac[] = { 0x90, 0xA2, 0xDA, 0x0D, 0xDE, 0xDE };
+/* IP Address */
+static uint8_t ip[] = { 192, 168, 1, 210 };
+// ROM-based messages used by the application, saves RAM
+P(Page_start) = "<html><head><title>RWXBioFuge</title></head><body><h1>RWXBioFuge Config</h1><p>Commands</p><table><tr><th>1 = Time</th><td>set length of centrifugation</td></tr><th>2 = RPM</th><td>Speed in %</td><\tr><tr><th>3 = Start</th><td>1 to start</td></tr><tr><th>4 = Stop</th><td>1 to stop</td></tr></table>\n";
+P(Page_end) = "</body></html>";
+P(Get_head) = "<h2>GET from ";
+P(Post_head) = "<h2>POST to ";
+P(Unknown_head) = "<h2>UNKNOWN request for ";
+P(Default_head) = "unidentified URL requested.</h2><br>\n";
+P(Parsed_head) = "index.html requested.</h2><br>\n";
+P(Good_tail_begin) = "Commands received via URL tail = '";
+P(Bad_tail_begin) = "INCOMPLETE URL tail = '";
+P(Tail_end) = "'<br>\n";
+P(Parsed_tail_begin) = "Parameters:<br>\n";
+P(Parsed_item_separator) = " = '";
+P(Params_end) = "End of parameters<br>\n";
+P(Post_params_begin) = "Parameters sent by POST:<br>\n";
+P(Line_break) = "<br>\n";
+/* This creates an instance of the webserver.  By specifying a prefix
+ * of "", all pages will be at the root of the server. */
+#define PREFIX ""
+WebServer webserver(PREFIX, 80);
+#define NAMELEN 32
+#define VALUELEN 32
+#define WEBDUINO_FAIL_MESSAGE "<h1>Request Failed</h1>"
+int webstart = 0;
+int webstop = 0;
 
 // set the LCD address to 0x27 for a 16 chars and 2 line display
 LiquidCrystal_I2C lcd(0x27,16,2);
@@ -31,9 +77,10 @@ uint32_t StateDt; // Time within a state
 uint32_t PhaseStartTime = 0;
 int LCDTime = 0;
 
+/* LEGACY CODE for potmeters 
 // Potentiometer pins
-int RPMpotPin = 1;
-int TimepotPin = 2;
+// int RPMpotPin = 1;
+// int TimepotPin = 2; */
 
 // RPM calculations
 int CurrentRPM = 0; // Current average RPM
@@ -41,13 +88,132 @@ int PrevRPM = 0; // Previous RPM
 double RPMtime = 0; // RPM time
 double RPMnow = 0; // Measured RPM
 double Gforce = 0; // Calculated GForce
-int InfraPin = 8; // Infrared sensor pin
+int InfraPin = 2; // Infrared sensor pin
 
 // set initial state
 const char* state = "StateProgramming";
 
 // ESC control
 Servo esc;
+
+// Panic settings
+boolean breakopp = false;
+
+
+void parsedCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)
+{
+  URLPARAM_RESULT rc;
+  char name[NAMELEN];
+  char value[VALUELEN];
+
+  /* this line sends the standard "we're all OK" headers back to the
+     browser */
+  server.httpSuccess();
+
+  /* if we're handling a GET or POST, we can output our data here.
+     For a HEAD request, we just stop after outputting headers. */
+  if (type == WebServer::HEAD)
+    return;
+
+  server.printP(Page_start);
+  switch (type)
+    {
+    case WebServer::GET:
+        server.printP(Get_head);
+        break;
+    case WebServer::POST:
+        server.printP(Post_head);
+        break;
+    default:
+        server.printP(Unknown_head);
+    }
+
+    server.printP(Parsed_head);
+    server.printP(tail_complete ? Good_tail_begin : Bad_tail_begin);
+    server.print(url_tail);
+    server.printP(Tail_end);
+
+  if (strlen(url_tail))
+    {
+    server.printP(Parsed_tail_begin);
+    while (strlen(url_tail))
+      {
+      rc = server.nextURLparam(&url_tail, name, NAMELEN, value, VALUELEN);
+      if (rc == URLPARAM_EOS)
+        server.printP(Params_end);
+       else
+        {
+        if(atoi(name) == 1) { server.print("Time"); }
+        else if(atoi(name) == 2){ server.print("RPM"); }
+        else if(atoi(name) == 3){ server.print("Webstart"); }
+        else if(atoi(name) == 4){ server.print("Webstop"); }
+        else { server.print(name); }
+        server.printP(Parsed_item_separator);
+        server.print(value);
+        server.printP(Tail_end);
+        
+        if(atoi(name) == 1) time_counter = atoi (value);
+        if(atoi(name) == 2) rpm_counter = atoi(value);
+        if(atoi(name) == 3) webstart = atoi(value);
+        if(atoi(name) == 4) webstop = atoi(value);
+        }
+      }
+    }
+  if (type == WebServer::POST)
+  {
+    server.printP(Post_params_begin);
+    while (server.readPOSTparam(name, NAMELEN, value, VALUELEN))
+    {
+      if(atoi(name) == 1) { server.print("Time"); }
+      else if(atoi(name) == 2){ server.print("RPM"); }
+      else if(atoi(name) == 3){ server.print("Webstart"); }
+      else if(atoi(name) == 4){ server.print("Webstop"); }
+      else { server.print(name); }
+      server.printP(Parsed_item_separator);
+      server.print(value);
+      server.printP(Tail_end); 
+  
+      if(atoi(name) == 1) time_counter = atoi (value);
+      if(atoi(name) == 2) rpm_counter = atoi(value);
+      if(atoi(name) == 3) webstart = atoi(value); 
+      if(atoi(name) == 4) webstop = atoi(value);   
+    }
+  }
+  server.printP(Page_end);
+
+}
+
+void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)
+{
+  /* this line sends the "HTTP 400 - Bad Request" headers back to the
+     browser */
+  server.httpFail();
+
+  /* if we're handling a GET or POST, we can output our data here.
+     For a HEAD request, we just stop after outputting headers. */
+  if (type == WebServer::HEAD)
+    return;
+
+  server.printP(Page_start);
+  switch (type)
+    {
+    case WebServer::GET:
+        server.printP(Get_head);
+        break;
+    case WebServer::POST:
+        server.printP(Post_head);
+        break;
+    default:
+        server.printP(Unknown_head);
+    }
+
+    server.printP(Default_head);
+    server.printP(tail_complete ? Good_tail_begin : Bad_tail_begin);
+    server.print(url_tail);
+    server.printP(Tail_end);
+    server.printP(Page_end);
+
+}
 
 void setup() {
       	// update clock
@@ -74,53 +240,83 @@ void setup() {
 	pinMode(4, INPUT); // Short button
 	pinMode(5, INPUT); // Limit switch of the lid
         pinMode(6, INPUT); // Stop button
-	
-	// initialize output
+       
+        /* initialize the Ethernet adapter */
+        Ethernet.begin(mac, ip);
+        /* setup our default command that will be run when the user accesses
+         * the root page on the server */
+        webserver.setDefaultCommand(&parsedCmd);
+        /* setup our default command that will be run when the user accesses
+         * a page NOT on the server */
+        webserver.setFailureCommand(&my_failCmd);
+        /* run the same command if you try to load /index.html, a common
+         * default page name */
+        webserver.addCommand("index.html", &parsedCmd);
+        /* start the webserver */
+        webserver.begin();
+        
+        // initialize output
         esc.attach(7);
 
-/*
-        // Start Ethernet connection
-        if (Ethernet.begin(mac) == 0) 
-        {
-                Serial.println("Failed to configure Ethernet using DHCP");
-        }
-        if (client.connect(server, 80)) 
-        {
-                Serial.println("connected");
-                // Make a HTTP request
-                client.println("GET /init HTTP/1.0");
-                client.println();
-                // Print reply
-                if (client.available()) 
-                {
-                        char c = client.read();
-                        Serial.print(c);
-                }
-        } 
-        else {
-                // if you didn't get a connection to the server:
-                Serial.println("connection failed");
-        } 
-*/
 }
 
 void loop() {
 	// update clock
 	uint32_t time = millis();
 	uint16_t dt = time-lastTick;
-	lastTick = time;
+	lastTick = time;   
 
+        // Rotary encoders
+        char outChar;
+        while ((outChar=(char)printBuffer.get()) != 0) Serial.print(outChar);
+        AdaEncoder *thisEncoder=NULL;
+        thisEncoder=AdaEncoder::genie();
+        if (thisEncoder != NULL) {
+          //Serial.print(thisEncoder->getID()); Serial.print(':');
+          clicks=thisEncoder->query();
+          if (clicks > 0) {
+            //Serial.println(" CW");
+            if(thisEncoder->getID() == 'a') time_counter += 1;
+            if(thisEncoder->getID() == 'b') rpm_counter += 1;
+            //Serial.println(acounter);
+            //Serial.println(bcounter);
+          }
+          if (clicks < 0) {
+            // Serial.println(" CCW");
+            if(thisEncoder->getID() == 'a') time_counter -= 1;
+            if(thisEncoder->getID() == 'b') rpm_counter -= 1;
+            //Serial.println(acounter);
+            //Serial.println(bcounter);       
+          }
+          if(time_counter < 0) time_counter = 0;
+          if(rpm_counter < 0) rpm_counter = 0;
+          if(rpm_counter > 100) rpm_counter = 100; 
+        }
+
+        // Ethernet
+        char buff[64];
+        int len = 64;
+        /* process incoming connections one at a time forever */
+        webserver.processConnection(buff, &len);
+                    
 	// Button updates
-	if(digitalRead(3) == LOW) {
+	if(digitalRead(3) == HIGH) {
 		Start = true;
 	}
+        if(webstart == 1) {
+                Start = true;
+                webstart = 0;
+        }
 	if(digitalRead(4) == LOW) {
 		Short = true;
 	}
-	if(digitalRead(5) == LOW) {
+	if(digitalRead(5) == HIGH) {
 		Locked = true;
 	}
-        if(digitalRead(6) == LOW) {
+        if(digitalRead(6) == HIGH) {
+                Stop = true;
+        }
+        if(webstop == 1) {
                 Stop = true;
         }
 
@@ -134,16 +330,16 @@ void loop() {
 	machineUpdate(dt);
 
 	// Button updates
-	if(digitalRead(3) == HIGH) {
+	if(digitalRead(3) == LOW) {
 		Start = false;
 	}
 	if(digitalRead(4) == HIGH) {
 		Short = false;
 	}
-	if(digitalRead(5) == HIGH) {
+	if(digitalRead(5) == LOW) {
 		Locked = false;
 	}
-        if(digitalRead(6) == HIGH) {
+        if(digitalRead(6) == LOW) {
                 Stop = false;
         }
 
@@ -167,22 +363,34 @@ void machineUpdate(uint16_t dt) {
   
 			// Responsive to all interactions
 
-			// Time
+                        // TIME
+                        int timec = (int) time_counter;
+                        if(timec < 25) Settings[1] = map(timec, 0, 25, 0, 60);
+                        else if(timec < 100) Settings[1] = map(timec, 25, 100, 60, 300);
+                        else if(timec < 200) Settings[1] = map(timec, 100, 200, 300, 1800);
+                        else if(timec < 254) Settings[1] = map(timec, 200, 254, 1800, 3600);
+                        else if(timec > 254) Settings[1] = -2;
+                        else Settings[1] = 0; 
+                        /* Legacy Potmeter code
 			int TimepotVal = analogRead(TimepotPin);
                         if(TimepotVal < 120) Settings[1] = map(TimepotVal, 0, 120, 0, 60);
                         else if(TimepotVal < 360) Settings[1] = map(TimepotVal, 120, 300, 60, 300);
                         else if(TimepotVal < 720) Settings[1] = map(TimepotVal, 300, 720, 300, 1800);
                         else if(TimepotVal < 1000) Settings[1] = map(TimepotVal, 720, 1023, 1800, 3600);
                         else if(TimepotVal > 999) Settings[1] = -2;
-                        else Settings[1] = 0;
+                        else Settings[1] = 0;*/
 
                         lcd.setCursor(0,0);
                         lcd.print("Time");
 			lcd.setCursor(6,0);
                         lcd.print(time(Settings[1]));
 
+  
 			// RPM
+                        Settings[0] = map((int) rpm_counter, 0, 100, 0, 100);
+                        /* Legacy pot meter code
 			Settings[0] = map(analogRead(RPMpotPin), 0, 1000, 0, 100);
+                        */
                         lcd.setCursor(0,1);
                         lcd.print("Speed");
 			lcd.setCursor(6,1);
@@ -194,8 +402,6 @@ void machineUpdate(uint16_t dt) {
 			// If user presses Start button
 			if(Start)
 			{
-                                // To Do: convert pot values to RPM and Time
-                                
 				stateChange("StateLock");
 			}
 			// If user presses Short button
@@ -244,22 +450,46 @@ void machineUpdate(uint16_t dt) {
 			        printStatus(dt);
 
                                 // wait a little
-                                delay(300);       
+                                delay(500); 
+                                
+                                // check if short button is released
+                                if(digitalRead(4) == HIGH) 
+                                {
+		                        Short = false;
+                                } 
+                                // check if we need to stop spinning
+                                if(!Short && Settings[1] == -1) 
+                                {
+                                        breakopp = true;
+                                }
+                                // check lid
+                                if(digitalRead(5) == LOW) 
+                                {
+		                        Locked = false;
+                                        breakopp = true;
+	                        }
+                                if(digitalRead(6) == HIGH) 
+                                {
+                                        Stop = true;
+                                        breakopp = true;
+                                }
+                                
+                                // check if we need to stop
+                                if(breakopp) 
+                                {
+                                        Settings[0] = 0;
+                                        esc.write(0);
+                                        breakopp = false;
+                                        break; // break for loop
+                                }
                         }
-                        
-                        esc.write(Settings[0]);
+                        // continue full speed if no breaks appeared
+                        if(!breakopp) {
+                                esc.write(Settings[0]);
+                        }
 
-			// If RPM reaches target
+			// When RPM reaches target
 			stateChange("StateSpinSteady");
-                        
-                        // Check for end of short
-			if(Settings[1] < 0) 
-			{
-				if(!Short && Settings[1] == -1) 
-				{
-					stateChange("StateRampdown");
-				}
-			}
 		}
 
 		if(state == "StateSpinSteady") {
@@ -268,7 +498,7 @@ void machineUpdate(uint16_t dt) {
 			printStatus(dt);
 	
 			// Send pulse to ESC
-                        esc.write(Settings[0]);
+                        // esc.write(Settings[0]);
 
 			// Time in current state
 			StateDt = millis() - PhaseStartTime;
@@ -276,6 +506,10 @@ void machineUpdate(uint16_t dt) {
 			// Check for end of Short or Eternal spin
 			if(Settings[1] < 0) 
 			{
+  	                        if(digitalRead(4) == HIGH) 
+                                {
+		                        Short = false;
+                                }  
 				if(!Short && Settings[1] == -1) 
 				{
 					stateChange("StateRampdown");
@@ -303,7 +537,15 @@ void machineUpdate(uint16_t dt) {
 			        printStatus(dt);
 
                                 // wait a little
-                                delay(300);       
+                                delay(300);
+                                
+                                // check lid
+                                if(digitalRead(5) == LOW) 
+                                {
+		                       Locked = false;
+                                       esc.write(0);
+                                       break;
+                                }
                         }
                         
 			// Send pulse to ESC
@@ -327,6 +569,7 @@ void machineUpdate(uint16_t dt) {
 		if(state == "StatePanic") {
 			// Stop rotor
 			esc.write(0);
+                        Settings[0] = 0;
 
 			// Print info
 			printInfo("PANIC: Emergency break","Lid opened!");
@@ -371,16 +614,6 @@ static void printStatus(uint16_t dt)
           	lcd.print(F(" "));
           	lcd.print(CurrentRPM);
         }
-
-/*
-        // Make a HTTP request
-        client.print("GET /status?a=Fuge&t=");
-        client.print(dt);
-        client.print("&rpm=");
-        client.print(CurrentRPM);
-        client.println(" HTTP/1.0");
-        client.println();
-*/
 }
 
 static void printInfo(char* line1, char* line2) 
@@ -392,21 +625,33 @@ static void printInfo(char* line1, char* line2)
 	lcd.setCursor(0,1);
 	lcd.print(line2);
 
-/*
-        // Make a HTTP request
-        client.print("GET /status?a=Fuge&l1=");
-        client.print(URLEncode(line1));
-        client.print("&l2=");
-        client.print(URLEncode(line2));
-        client.println(" HTTP/1.0");
-        client.println();
-*/
 }
 
 static void stateChange(const char* newstate) 
 {
 	state = newstate;
+        Serial.println(newstate);
         PhaseStartTime = millis();
+
+	// Button updates
+	if(digitalRead(4) == HIGH) {
+		Short = false;
+	}
+	if(digitalRead(5) == LOW) {
+		Locked = false;
+	}
+        if(digitalRead(6) == HIGH) {
+                Stop = true;
+        }
+
+	// Check for panic
+	if(state != "StateProgramming" && state != "StatePanic" && state != "StateUnlock")
+	{
+		if(Locked == false)
+		{
+			stateChange("StatePanic");
+		}
+	}        
 }
 
 String URLEncode(const char* msg)
