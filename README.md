@@ -6,8 +6,8 @@ RWXBioFuge code for operating an Open Source microcentrifuge.
 WARNING: Fast spinning rotors are dangerous!
 
 Input:
-- Time potentiometer
-- RPM potentiometer
+- Time rotary encoder
+- RPM rotary encoder
 - Start button
 - Short run button
 - Lid detector
@@ -20,13 +20,18 @@ Output:
 - I2C 16x2 LCD display
 
 TO DO:
+- Electromagnet lid lock
 - Temperature control for cooled centrifuge
 - Servo lid opener
 - RGD LED strip for eye candy
 - GForce or RPM selector instead of % power
-- Rotary pulse selectors instead of potentiometers
-- Active RPM monitor
 - Rotor balance sensor
+
+Dependencies:
+- Webduino https://github.com/sirleech/Webduino
+- AdaEncoder https://code.google.com/p/adaencoder/
+- ooPinChageInt https://code.google.com/p/oopinchangeint/
+- LiquidCrystal_I2 http://hmario.home.xs4all.nl/arduino/LiquidCrystal_I2C/
 
 Credits:
 This project has been greatly inspired by the work of:
