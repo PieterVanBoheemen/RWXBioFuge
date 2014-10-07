@@ -16,6 +16,14 @@ This repository contains the code, source files and instructions for operating t
 
 > **LICENSE**: All work in this project is licensed under the [Creative Commons Attribution-ShareAlike 4.0 International License][8]. In other words: you are free to use everything in this repository as long as you attribute Pieter van Boheemen and share derivative work under the same conditions.
 
+Credits: This project has been greatly inspired by the work of:
+
+    Cathal Garvey - Dremelfuge
+    Karlin Yeh - OpenFuge
+    Drevious - Microfuge 8 Place Rotor
+    Hackteria - Hacked Hard Disk centrifuge
+
+
 [1]:https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/ArduinoCode/
 [2]:https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/Rotor/
 [3]:https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/Device/
