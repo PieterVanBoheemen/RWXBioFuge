@@ -21,7 +21,7 @@ io2=>inputoutput: Set Time
 op1=>operation: Press Start
 op2=>operation: Spin Rotor
 cond=>condition: Stop Pressed
-e=>end: End
+e=>end
 
 st->io1->io2->op1->op2->cond
 cond(no)->e
@@ -34,8 +34,20 @@ st=>start: Begin
 op1=>operation: Press Short
 op2=>operation: Spin Rotor
 cond=>condition: Short released
-e=>end: End
+e=>end
+
 st->op1->op2->cond
 cond(no)->op2
 cond(yes)->e
+```
+
+```flow
+st=>start: Start
+e=>end
+op=>operation: My Operation
+cond=>condition: Yes or No?
+
+st->op->cond
+cond(yes)->e
+cond(no)->op
 ```
