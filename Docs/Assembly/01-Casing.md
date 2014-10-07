@@ -1,5 +1,5 @@
-Casing
-======
+01 Casing
+========
 
 The first step in assembly of the RWXBioFuge is to construct the casing.
 
