@@ -14,7 +14,7 @@ This repository contains the code, source files and instructions for operating t
 
 > **WARNING**: Fast spinning rotors are dangerous! Make sure you read the [safety instructions][7] before use.
 
-> **LICENSE**: All work in this project is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License. In other words: you are free to use everything in this repository as long as you attribute Pieter van Boheemen and share derivative work under the same conditions.
+> **LICENSE**: All work in this project is licensed under the [Creative Commons Attribution-ShareAlike 4.0 International License][8]. In other words: you are free to use everything in this repository as long as you attribute Pieter van Boheemen and share derivative work under the same conditions.
 
 [1]:https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/ArduinoCode/
 [2]:https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/Rotor/
@@ -22,4 +22,5 @@ This repository contains the code, source files and instructions for operating t
 [4]:https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/Docs/
 [5]:https://www.youmagine.com/designs/microcentrifuge-20-place-rotor
 [6]:https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/Docs/Tutorials/
-[7]:https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/Docs/Operation/
+[7]:https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/Docs/Usage/
+[8]:http://creativecommons.org/licenses/by-sa/4.0/
