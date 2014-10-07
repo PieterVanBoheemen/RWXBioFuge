@@ -9,3 +9,5 @@ RWXBioFuge code for operating an Open Source microcentrifuge.
 - Docs: assembly and tutorial documents
 
 WARNING: Fast spinning rotors are dangerous!
+
+LICENSE: All work in this project is licensed under a Creative Commons Attribution-ShareAlike 4.0 International License.
