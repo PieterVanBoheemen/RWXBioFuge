@@ -7,16 +7,16 @@ Before you get to the actual assembly of the machine, we are going to make sure 
 2. Make some space on your workbench large enough to layout the components, get rid of other rubbish that you don't need.
 3. Brew some coffee, open up a beer or poor yourself a glass of water.
 4. You will need the following tools:
-- Flat head screw driver
-- Pliers (optional) for holding small parts like M3 bolts and wire header pins
+  - Flat head screw driver
+  - Pliers (optional) for holding small parts like M3 bolts and wire header pins
 5. Check whether you have all the parts:
-- Power Supply
-- Power Cord
-- USB Cord
-- Arduino Ethernet
-- Electronic components
-- Laser Cut panels
-- Nuts and bolts
+  - Power Supply
+  - Power Cord
+  - USB Cord
+  - Arduino Ethernet
+  - Electronic components
+  - Laser Cut panels
+  - Nuts and bolts
 
 > **Note:** Make sure you are in a place with enough light, it might be convenient to have a desk lamp or flash light at your disposal to illuminate areas of interest.
 
