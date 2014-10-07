@@ -1,9 +1,5 @@
-RWXBioFuge
-==========
-
-RWXBioFuge code for operating an Open Source microcentrifuge.
-
-WARNING: Fast spinning rotors are dangerous!
+RWXBioFuge Arduino Code
+=======================
 
 Input:
 - Time rotary encoder
@@ -30,7 +26,7 @@ TO DO:
 Dependencies:
 - Webduino https://github.com/sirleech/Webduino
 - AdaEncoder https://code.google.com/p/adaencoder/
-- ooPinChageInt https://code.google.com/p/oopinchangeint/
+- ooPinChangeInt https://code.google.com/p/oopinchangeint/
 - LiquidCrystal_I2 http://hmario.home.xs4all.nl/arduino/LiquidCrystal_I2C/
 
 Credits:
