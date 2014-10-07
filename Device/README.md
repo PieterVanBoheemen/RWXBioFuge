@@ -9,4 +9,4 @@ In this folder you will find:
 - 3D SketchUp design file
 - 2D SVG files of each part
 
-[1]: https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/Docs/Guide/
+[1]: https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/Docs/Assembly/
