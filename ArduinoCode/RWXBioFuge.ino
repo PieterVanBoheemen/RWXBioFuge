@@ -1,4 +1,4 @@
-// WARNING: Code is in development, use at your won risk
+// WARNING: Code is in development, not fully tested!!
 
 #include <Wire.h>
 #include <SPI.h>
@@ -11,10 +11,10 @@
 // rotary counter
 #include <ByteBuffer.h>
 #include <ooPinChangeInt.h>
-#define DEBUG
-#ifdef DEBUG
-ByteBuffer printBuffer(200);
-#endif
+//#define DEBUG
+//#ifdef DEBUG
+//ByteBuffer printBuffer(200);
+//#endif
 #include <AdaEncoder.h>
 #define ENCA_a 8
 #define ENCA_b 9
@@ -26,37 +26,6 @@ int8_t clicks=0;
 char id=0;
 int time_counter = 0;
 int rpm_counter = 0;
-
-// network configuration.  gateway and subnet are optional.
-/* Mac Address */
-static uint8_t mac[] = { 0x90, 0xA2, 0xDA, 0x0D, 0xDE, 0xDE };
-/* IP Address */
-static uint8_t ip[] = { 192, 168, 1, 210 };
-// ROM-based messages used by the application, saves RAM
-P(Page_start) = "<html><head><title>RWXBioFuge</title></head><body><h1>RWXBioFuge Config</h1><p>Commands</p><table><tr><th>1 = Time</th><td>set length of centrifugation</td></tr><th>2 = RPM</th><td>Speed in %</td><\tr><tr><th>3 = Start</th><td>1 to start</td></tr><tr><th>4 = Stop</th><td>1 to stop</td></tr></table>\n";
-P(Page_end) = "</body></html>";
-P(Get_head) = "<h2>GET from ";
-P(Post_head) = "<h2>POST to ";
-P(Unknown_head) = "<h2>UNKNOWN request for ";
-P(Default_head) = "unidentified URL requested.</h2><br>\n";
-P(Parsed_head) = "index.html requested.</h2><br>\n";
-P(Good_tail_begin) = "Commands received via URL tail = '";
-P(Bad_tail_begin) = "INCOMPLETE URL tail = '";
-P(Tail_end) = "'<br>\n";
-P(Parsed_tail_begin) = "Parameters:<br>\n";
-P(Parsed_item_separator) = " = '";
-P(Params_end) = "End of parameters<br>\n";
-P(Post_params_begin) = "Parameters sent by POST:<br>\n";
-P(Line_break) = "<br>\n";
-/* This creates an instance of the webserver.  By specifying a prefix
- * of "", all pages will be at the root of the server. */
-#define PREFIX ""
-WebServer webserver(PREFIX, 80);
-#define NAMELEN 32
-#define VALUELEN 32
-#define WEBDUINO_FAIL_MESSAGE "<h1>Request Failed</h1>"
-int webstart = 0;
-int webstop = 0;
 
 // set the LCD address to 0x27 for a 16 chars and 2 line display
 LiquidCrystal_I2C lcd(0x27,16,2);
@@ -99,6 +68,41 @@ Servo esc;
 // Panic settings
 boolean breakopp = false;
 
+// network configuration.  gateway and subnet are optional.
+/* Mac Address */
+static uint8_t mac[] = { 0x90, 0xA2, 0xDA, 0x0D, 0xDE, 0xDE };
+/* IP Address */
+static uint8_t ip[] = { 192, 168, 1, 210 };
+// ROM-based messages used by the application, saves RAM
+P(Page_start) = "<html><head><title>RWXBioFuge</title></head><body><h1>RWXBioFuge Webcontrol</h1><hr /><h2>Commands</h2><table><tbody><tr><th>1 = Time</th><td>set length of centrifugation</td></tr><tr><th>2 = RPM</th><td>Speed in %</td></tr><tr><th>3 = Start</th><td>1 to start</td></tr><tr><th>4 = Stop</th><td>1 to stop</td></tr></tbody></table><br /><hr /><h2>Send commands to RWXBioFuge</h2><form action='index.html' method='get'>Time (seconds): <input type='text' name='1' value='0' /><br />Speed (0-100%): <input type='text' name='2' value='0' /><br /><button name='3' type='submit' value='1'>Start</button> <button name='4' type='submit' value='1'>Stop</button></form><hr /><iframe src='status.html' height='180'></iframe><hr /> \n";
+P(Status_start) = "<html><head><meta http-equiv='refresh' content='2'></head><body><h2>Status</h2><table><tbody><tr><td>Set Time</td><td>";
+P(Status_2) = "</td></tr><tr><td>Set Speed</td><td>";
+P(Status_3) = "</td></tr><tr><td>Current Speed</td><td>";
+P(Status_4) = "</td></tr><tr><td>Time remaining</td><td>";
+P(Status_5) = "</td></tr></tbody></table></body></html>";
+P(Page_end) = "</body></html>";
+P(Get_head) = "<h3>GET from ";
+P(Post_head) = "<h3>POST to ";
+P(Unknown_head) = "<h3>UNKNOWN request for ";
+P(Default_head) = "unidentified URL requested.</h3>\n";
+P(Parsed_head) = "index.html requested.</h3>\n";
+P(Good_tail_begin) = "Commands received via URL tail = '";
+P(Bad_tail_begin) = "INCOMPLETE URL tail = '";
+P(Tail_end) = "'<br>\n";
+P(Parsed_tail_begin) = "Parameters:<br>\n";
+P(Parsed_item_separator) = " = '";
+P(Params_end) = "End of parameters<br>\n";
+P(Post_params_begin) = "Parameters sent by POST:<br>\n";
+P(Line_break) = "<br>\n";
+/* This creates an instance of the webserver.  By specifying a prefix
+ * of "", all pages will be at the root of the server. */
+#define PREFIX ""
+WebServer webserver(PREFIX, 80);
+#define NAMELEN 2
+#define VALUELEN 32
+#define WEBDUINO_FAIL_MESSAGE "<h1>Request Failed</h1>"
+int webstart = 0;
+int webstop = 0;
 
 void parsedCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)
 {
@@ -116,6 +120,7 @@ void parsedCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail
     return;
 
   server.printP(Page_start);
+ 
   switch (type)
     {
     case WebServer::GET:
@@ -143,19 +148,21 @@ void parsedCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail
         server.printP(Params_end);
        else
         {
-        if(atoi(name) == 1) { server.print("Time"); }
-        else if(atoi(name) == 2){ server.print("RPM"); }
-        else if(atoi(name) == 3){ server.print("Webstart"); }
-        else if(atoi(name) == 4){ server.print("Webstop"); }
+        /* if(atoi(name) == 1) { server.print(F("Time")); }
+        else if(atoi(name) == 2){ server.print(F("RPM")); }
+        else if(atoi(name) == 3){ server.print(F("Webstart")); }
+        else if(atoi(name) == 4){ server.print(F("Webstop")); }
         else { server.print(name); }
         server.printP(Parsed_item_separator);
         server.print(value);
-        server.printP(Tail_end);
+        server.printP(Tail_end); */
+        parseVars(server, name, value);
         
-        if(atoi(name) == 1) time_counter = atoi (value);
-        if(atoi(name) == 2) rpm_counter = atoi(value);
-        if(atoi(name) == 3) webstart = atoi(value);
-        if(atoi(name) == 4) webstop = atoi(value);
+        //if(atoi(name) == 1) Settings[1] = atoi(value);
+        //if(atoi(name) == 2) Settings[0] = atoi(value);
+        //if(atoi(name) == 3) webstart = atoi(value);
+        //if(atoi(name) == 4) webstop = atoi(value);
+        storeValue(name, value); 
         }
       }
     }
@@ -164,23 +171,62 @@ void parsedCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail
     server.printP(Post_params_begin);
     while (server.readPOSTparam(name, NAMELEN, value, VALUELEN))
     {
-      if(atoi(name) == 1) { server.print("Time"); }
-      else if(atoi(name) == 2){ server.print("RPM"); }
-      else if(atoi(name) == 3){ server.print("Webstart"); }
-      else if(atoi(name) == 4){ server.print("Webstop"); }
+      /*if(atoi(name) == 1) { server.print(F("Time")); }
+      else if(atoi(name) == 2){ server.print(F("RPM")); }
+      else if(atoi(name) == 3){ server.print(F("Webstart")); }
+      else if(atoi(name) == 4){ server.print(F("Webstop")); }
+      else { server.print(name); }
+      server.printP(Parsed_item_separator);
+      server.print(value);
+      server.printP(Tail_end); */
+      parseVars(server, name, value);
+  
+      /* if(atoi(name) == 1) Settings[1] = atoi(value);
+      if(atoi(name) == 2) Settings[0] = atoi(value);
+      if(atoi(name) == 3) webstart = atoi(value); 
+      if(atoi(name) == 4) webstop = atoi(value); */ 
+      storeValue(name, value); 
+    }
+  }
+    
+  server.printP(Page_end);
+
+}
+
+void storeValue(char name[32], char value[32]) {
+      if(atoi(name) == 1) Settings[1] = atoi(value);
+      if(atoi(name) == 2) Settings[0] = atoi(value);
+      if(atoi(name) == 3) webstart = atoi(value); 
+      if(atoi(name) == 4) webstop = atoi(value); 
+}
+
+void parseVars(WebServer &server, char name[32], char value[32]) {
+      if(atoi(name) == 1) { server.print(F("Time")); }
+      else if(atoi(name) == 2){ server.print(F("RPM")); }
+      else if(atoi(name) == 3){ server.print(F("Start")); }
+      else if(atoi(name) == 4){ server.print(F("Stop")); }
       else { server.print(name); }
       server.printP(Parsed_item_separator);
       server.print(value);
       server.printP(Tail_end); 
-  
-      if(atoi(name) == 1) time_counter = atoi (value);
-      if(atoi(name) == 2) rpm_counter = atoi(value);
-      if(atoi(name) == 3) webstart = atoi(value); 
-      if(atoi(name) == 4) webstop = atoi(value);   
-    }
-  }
-  server.printP(Page_end);
+}
 
+void statusCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)
+{
+  server.printP(Status_start);
+  server.print(Settings[1]);
+  server.printP(Status_2);
+  server.print(Settings[0]);
+  server.printP(Status_3); 
+  server.print(CurrentRPM);
+  server.printP(Status_4); 
+  if(state != "StateProgramming" && state != "StatePanic" && state != "StateUnlock") {
+    server.print(time(Settings[1] - StateDt/1000));
+  }
+  else {
+    server.print(0);
+  }
+  server.printP(Status_5); 
 }
 
 void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tail, bool tail_complete)
@@ -194,8 +240,8 @@ void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tai
   if (type == WebServer::HEAD)
     return;
 
-  server.printP(Page_start);
-  switch (type)
+  server.printP(Page_start); 
+/*  switch (type)
     {
     case WebServer::GET:
         server.printP(Get_head);
@@ -210,7 +256,7 @@ void my_failCmd(WebServer &server, WebServer::ConnectionType type, char *url_tai
     server.printP(Default_head);
     server.printP(tail_complete ? Good_tail_begin : Bad_tail_begin);
     server.print(url_tail);
-    server.printP(Tail_end);
+    server.printP(Tail_end); */
     server.printP(Page_end);
 
 }
@@ -224,7 +270,7 @@ void setup() {
 
 	// open serial connection
 	Serial.begin(9600);
-        Serial.println("Start");
+        Serial.println(F("Start"));
 
 	// initialize the LCD
 	lcd.init();
@@ -252,6 +298,7 @@ void setup() {
         /* run the same command if you try to load /index.html, a common
          * default page name */
         webserver.addCommand("index.html", &parsedCmd);
+        webserver.addCommand("status.html", &statusCmd);
         /* start the webserver */
         webserver.begin();
         
@@ -267,8 +314,8 @@ void loop() {
 	lastTick = time;   
 
         // Rotary encoders
-        char outChar;
-        while ((outChar=(char)printBuffer.get()) != 0) Serial.print(outChar);
+        //char outChar;
+        //while ((outChar=(char)printBuffer.get()) != 0) Serial.print(outChar);
         AdaEncoder *thisEncoder=NULL;
         thisEncoder=AdaEncoder::genie();
         if (thisEncoder != NULL) {
@@ -305,7 +352,6 @@ void loop() {
 	}
         if(webstart == 1) {
                 Start = true;
-                webstart = 0;
         }
 	if(digitalRead(4) == LOW) {
 		Short = true;
@@ -323,7 +369,6 @@ void loop() {
         if(Stop == true)
         {
                 stateChange("StateRampdown");
-                Serial.println("Stop");
         }
 
 	// Machine logic
@@ -333,6 +378,10 @@ void loop() {
 	if(digitalRead(3) == LOW) {
 		Start = false;
 	}
+        if(webstart == 1) {
+                Start = false;
+                webstart = 0;
+        }
 	if(digitalRead(4) == HIGH) {
 		Short = false;
 	}
@@ -341,6 +390,10 @@ void loop() {
 	}
         if(digitalRead(6) == LOW) {
                 Stop = false;
+        }
+        if(webstop == 1) {
+                Stop = false;
+                webstop = 0;
         }
 
 	// Check for panic
@@ -364,12 +417,13 @@ void machineUpdate(uint16_t dt) {
 			// Responsive to all interactions
 
                         // TIME
-                        int timec = (int) time_counter;
-                        if(timec < 25) Settings[1] = map(timec, 0, 25, 0, 60);
-                        else if(timec < 100) Settings[1] = map(timec, 25, 100, 60, 300);
-                        else if(timec < 200) Settings[1] = map(timec, 100, 200, 300, 1800);
-                        else if(timec < 254) Settings[1] = map(timec, 200, 254, 1800, 3600);
-                        else if(timec > 254) Settings[1] = -2;
+                        //int timec = (int) time_counter;
+                        if(time_counter < 30) Settings[1] = map(time_counter, 0, 30, 0, 30);
+                        else if(time_counter < 36) Settings[1] = map(time_counter, 30, 36, 30, 60);
+                        else if(time_counter < 40) Settings[1] = map(time_counter, 36, 40, 60, 120);
+                        else if(time_counter < 48) Settings[1] = map(time_counter, 40, 48, 120, 600);
+                        else if(time_counter < 52) Settings[1] = map(time_counter, 48, 52, 600, 3000);
+                        else if(time_counter > 52) Settings[1] = -2;
                         else Settings[1] = 0; 
                         /* Legacy Potmeter code
 			int TimepotVal = analogRead(TimepotPin);
@@ -381,7 +435,7 @@ void machineUpdate(uint16_t dt) {
                         else Settings[1] = 0;*/
 
                         lcd.setCursor(0,0);
-                        lcd.print("Time");
+                        lcd.print(F("Time"));
 			lcd.setCursor(6,0);
                         lcd.print(time(Settings[1]));
 
@@ -392,12 +446,12 @@ void machineUpdate(uint16_t dt) {
 			Settings[0] = map(analogRead(RPMpotPin), 0, 1000, 0, 100);
                         */
                         lcd.setCursor(0,1);
-                        lcd.print("Speed");
+                        lcd.print(F("Speed"));
 			lcd.setCursor(6,1);
-                        if(Settings[0] < 10) lcd.print(" ");
-                        if(Settings[0] < 100) lcd.print(" ");
+                        if(Settings[0] < 10) lcd.print(F("  "));
+                        if(Settings[0] < 100) lcd.print(F(" "));
 			lcd.print(Settings[0]);
-                        lcd.print("%");
+                        lcd.print(F("%"));
 
 			// If user presses Start button
 			if(Start)
@@ -441,13 +495,16 @@ void machineUpdate(uint16_t dt) {
 		if(state == "StateRampup") {
 			// Start spinning the rotor
 
+                        // update LCD
+                        printInfo("Speeding up","");
+
 			// Send pulses to ESC
                         for(int i=30;i<Settings[0];i+=10) {
                                 esc.write(i);
                                 
                                 // update LCD
-                                measureSpeed(dt);	
-			        printStatus(dt);
+                                //measureSpeed(dt);	
+			        //printStatus(dt);
 
                                 // wait a little
                                 delay(500); 
@@ -528,13 +585,16 @@ void machineUpdate(uint16_t dt) {
 		if(state == "StateRampdown") {
 			// Slowly reduce rotor speed
 
+                        // update LCD
+                        printInfo("Slowing down","");
+
 			// Send pulses to ESC
                         for(int i=Settings[0];i>21;i=i-10) {
                                 esc.write(i);
                                 
                                 // update LCD
-                                measureSpeed(dt);	
-			        printStatus(dt);
+                                //measureSpeed(dt);	
+			        //printStatus(dt);
 
                                 // wait a little
                                 delay(300);
@@ -559,7 +619,7 @@ void machineUpdate(uint16_t dt) {
 			// Unlock the system
 			
 			// Print finish
-			printInfo("Done","");
+			printInfo("Unlocking machine","");
 			delay(1000);
 			
 			// Return to programming mode
@@ -607,10 +667,13 @@ static void printStatus(uint16_t dt)
                 // Print to LCD
           	lcd.clear();
           	lcd.setCursor(0,0);
-          	lcd.print(state);
+          	//lcd.print(state);
+                lcd.print(F("Spinning @ "));
+                lcd.print(Gforce);
+                lcd.print(F("g"));
           	lcd.setCursor(0,1);
           	//lcd.print(F(""));
-          	lcd.print(time(StateDt/1000));
+          	lcd.print(time(Settings[1] - StateDt/1000));
           	lcd.print(F(" "));
           	lcd.print(CurrentRPM);
         }
@@ -624,7 +687,6 @@ static void printInfo(char* line1, char* line2)
 	lcd.print(line1);
 	lcd.setCursor(0,1);
 	lcd.print(line2);
-
 }
 
 static void stateChange(const char* newstate) 
@@ -654,6 +716,7 @@ static void stateChange(const char* newstate)
 	}        
 }
 
+/*
 String URLEncode(const char* msg)
 {
         // Derived from http://hardwarefun.com/tutorials/url-encoding-in-arduino
@@ -676,9 +739,9 @@ String URLEncode(const char* msg)
                  msg++;
         }
         return encodedMsg;
-}
+} */
 
-String time(long val){  
+String time(int val){  
          if(val < 0) 
          {
               return "infinite";
@@ -690,16 +753,19 @@ String time(long val){
              int minutes = numberOfMinutes(val);
              int seconds = numberOfSeconds(val);
             
-              String returnval = "";
+             String returnval = "";
+             
+             //Serial.println(minutes);
             
-              // digital clock display of current time 
-              returnval = printDigits(hours) + ":" + printDigits(minutes) + ":" + printDigits(seconds);
-              
-              return returnval;
+             // digital clock display of current time 
+             returnval = printDigits(minutes) + ":" + printDigits(seconds) + "   ";
+             //returnval = String(hours) + ":" + String(minutes) + ":" + String(seconds); 
+             
+             return returnval;
          }
     }
 
-String printDigits(byte digits){
+String printDigits(int digits){
           // utility function for digital clock display: prints colon and leading 0
           String returnval = "";
           if(digits < 10)
