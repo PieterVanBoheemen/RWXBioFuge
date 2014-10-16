@@ -5,7 +5,7 @@ The RWXBioFuge consists of solely of-the-shelf parts and laser cut wood that has
 
 In this folder you will find:
 
-- The Bill of Materials (BoL)
+- The Bill of Materials (BoM)
 - 3D SketchUp design file
 - 2D SVG files of each part
 
