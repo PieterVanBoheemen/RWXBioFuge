@@ -8,5 +8,6 @@ In this folder you will find:
 - The Bill of Materials (BoM)
 - 3D SketchUp design file
 - 2D SVG files of each part
+- Fritzing wiring of Breadboard or Shield
 
 [1]: https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/Docs/Assembly/
