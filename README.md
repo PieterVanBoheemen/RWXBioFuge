@@ -12,6 +12,8 @@ This repository contains the code, source files and instructions for operating t
 - [Device][3]: Bill of Materials, 3D model and 2D CAD files
 - [Docs][4]: assembly and tutorial documents
 
+![](Device/RWXBioFuge%20preview.png?raw=true)
+
 > **WARNING**: Fast spinning rotors are dangerous! Make sure you read the [safety instructions][7] before use.
 
 > **LICENSE**: All work in this project is licensed under the [Creative Commons Attribution-ShareAlike 4.0 International License][8]. In other words: you are free to use everything in this repository as long as you attribute Pieter van Boheemen and share derivative work under the same conditions.
