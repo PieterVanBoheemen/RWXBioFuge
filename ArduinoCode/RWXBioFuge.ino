@@ -323,14 +323,14 @@ void loop() {
           clicks=thisEncoder->query();
           if (clicks > 0) {
             //Serial.println(" CW");
-            if(thisEncoder->getID() == 'a') time_counter += 1;
+            if(thisEncoder->getID() == 'a') time_counter -= 1;
             if(thisEncoder->getID() == 'b') rpm_counter += 1;
             //Serial.println(acounter);
             //Serial.println(bcounter);
           }
           if (clicks < 0) {
             // Serial.println(" CCW");
-            if(thisEncoder->getID() == 'a') time_counter -= 1;
+            if(thisEncoder->getID() == 'a') time_counter += 1;
             if(thisEncoder->getID() == 'b') rpm_counter -= 1;
             //Serial.println(acounter);
             //Serial.println(bcounter);       
@@ -448,7 +448,7 @@ void machineUpdate(uint16_t dt) {
                         lcd.setCursor(0,1);
                         lcd.print(F("Speed"));
 			lcd.setCursor(6,1);
-                        if(Settings[0] < 10) lcd.print(F("  "));
+                        if(Settings[0] < 10) lcd.print(F(" "));
                         if(Settings[0] < 100) lcd.print(F(" "));
 			lcd.print(Settings[0]);
                         lcd.print(F("%"));
@@ -619,8 +619,9 @@ void machineUpdate(uint16_t dt) {
 			// Unlock the system
 			
 			// Print finish
-			printInfo("Unlocking machine","");
+			printInfo("Unlocking","");
 			delay(1000);
+                        printInfo("","");
 			
 			// Return to programming mode
 			stateChange("StateProgramming");
@@ -668,7 +669,7 @@ static void printStatus(uint16_t dt)
           	lcd.clear();
           	lcd.setCursor(0,0);
           	//lcd.print(state);
-                lcd.print(F("Spinning @ "));
+                lcd.print(F("Force "));
                 lcd.print(Gforce);
                 lcd.print(F("g"));
           	lcd.setCursor(0,1);

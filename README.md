@@ -9,7 +9,7 @@ This repository contains the code, source files and instructions for operating t
 
 - [ArduinoCode][1]: source code for the Arduino Ethernet
 - [Rotor][2]: OpenSCAD source code for the rotor, preview at [YouMagine][5]
-- [Device][3]: Bill of Materials, 3D model and 2D CAD files
+- [Device][3]: Bill of Materials, 3D model, 2D CAD files and Fritzing wiring
 - [Docs][4]: assembly and tutorial documents
 
 ![](Device/RWXBioFuge%20preview.png?raw=true)
