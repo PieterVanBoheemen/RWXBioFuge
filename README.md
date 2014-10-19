@@ -55,7 +55,7 @@ The following upgrades are planned for the next version:
 
 Credits: This project has been greatly inspired by the work, advise and help of:
 
-    DIYBio Groningen for printing the first rotor at [Beneden-Leeuwen Mini Maker Faire][9]
+    DIYBio Groningen for printing the first rotor at Beneden-Leeuwen Mini Maker Faire
 	Cathal Garvey - Dremelfuge
     Karlin Yeh - OpenFuge
     Drevious - Microfuge 8 Place Rotor
