@@ -33,4 +33,4 @@ It can be seen that g is equal to 0.011rN^2. This is why the centrifugal force i
 ***Question:*** Let's spin a liquid at 2000 RPM at a radius of 10 cm, what is the amount of "g" on the particle?
 
 ***Answer:*** 
-![g=F_{c}  \div F_{g}=(0.011r N^{2})  \div g=(0.011 \times 0.1 \times 2000^{2}) \div 9.81 = 450](http://www.sciweavers.org/tex2img.php?eq=g%3DF_%7Bc%7D%20%20%5Cdiv%20F_%7Bg%7D%3D%280.011r%20N%5E%7B2%7D%29%20%20%5Cdiv%20g%3D%280.011%20%5Ctimes%200.1%20%5Ctimes%202000%5E%7B2%7D%29%20%5Cdiv%209.81%20%3D%20450&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0}
+![g=F_{c}  \div F_{g}=(0.011r N^{2})  \div g=(0.011 \times 0.1 \times 2000^{2}) \div 9.81 = 450](http://www.sciweavers.org/tex2img.php?eq=g%3DF_%7Bc%7D%20%20%5Cdiv%20F_%7Bg%7D%3D%280.011r%20N%5E%7B2%7D%29%20%20%5Cdiv%20g%3D%280.011%20%5Ctimes%200.1%20%5Ctimes%202000%5E%7B2%7D%29%20%5Cdiv%209.81%20%3D%20450&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0)
