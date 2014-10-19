@@ -15,7 +15,10 @@ This repository contains the code, source files and instructions for operating t
 - [Docs][4]: assembly and tutorial documents
 
 ![Render](Device/RWXBioFuge%20preview%20v1.0.png?raw=true)
-![Pictures](RWXBioFuge%10collage%20v0.1.png?raw=true)
+![Pictures](https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/RWXBioFuge%20collage%20v0.1.png?raw=true)
+![Beneden Leeuwen](http://www.diybiogroningen.org/wp-content/uploads/2014/01/openFuge_comp1-1024x683.png)
+
+The V0.1 machine is used in the [Waag Society's Open Wetlab][10] and future improvements will be made during the [Open Wetlab open evenings][11].
 
 > **WARNING**: Fast spinning rotors are dangerous! Make sure you read the [safety instructions][7] before use.
 
@@ -40,18 +43,20 @@ V0.1 is the first development release of RWXBioFuge. It is still in experimental
 ###To Do
 The following upgrades are planned for the next version:
 - Step by step graphical assembly guide in Instructables style
-- Optimization of Power Supply, ESC and brushless motor setup to save costs
+- Optimization of Power Supply, ESC and motor setup to save costs
 - Reduced size of the casing by better placement of components
 - Single rotary encoder interface to save costs
 - Magnetic lid lock to increase safety
 - Accelerometer for the detection of unbalanced rotor through vibrations to increase safety
 - Transparent window in lid
 - Numbered tube holes in rotor
+- Different types of rotors, for various number and sizes of tubes and Hct
 - Improved graphical Web User Interface 
 
-Credits: This project has been greatly inspired by the work of:
+Credits: This project has been greatly inspired by the work, advise and help of:
 
-    Cathal Garvey - Dremelfuge
+    DIYBio Groningen for printing the first rotor at [Beneden-Leeuwen Mini Maker Faire][9]
+	Cathal Garvey - Dremelfuge
     Karlin Yeh - OpenFuge
     Drevious - Microfuge 8 Place Rotor
     Hackteria - Hacked Hard Disk centrifuge
@@ -65,3 +70,6 @@ Credits: This project has been greatly inspired by the work of:
 [6]:https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/Docs/Tutorials/
 [7]:https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/Docs/Usage/
 [8]:http://creativecommons.org/licenses/by-sa/4.0/
+[9]:http://www.diybiogroningen.org/mini-mini-maker-faire-in-beneden-leeuwen/
+[10]:http://waag.org/en/lab/open-wetlab
+[11]:http://www.meetup.com/Dutch-DIY-Bio/
