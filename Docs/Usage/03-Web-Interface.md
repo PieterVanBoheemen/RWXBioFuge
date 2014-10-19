@@ -3,7 +3,7 @@
 
 The main reason for the RWXBioFuge to have a webinterface is to enable you to safely hack and tweak the machine by operating it from a distance.
 
-Put the machine in a seperate room or a very strong container and use a regular UTP CAT5 cable to connect the RWXBioFuge to your local network.
+Put the machine in a separate room or a very strong container and use a regular UTP CAT5 cable to connect the RWXBioFuge to your local network.
 
 By default the machine can be reached via http://192.168.1.210, you may change the IP address in the [source code][1].
 

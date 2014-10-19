@@ -13,5 +13,5 @@ The third step is to preparing the Arduino Ethernet.
 
 Almost done, just one more step left: [04 Final][2].
 
-[1]:https://github.com/PieterVanBoheemen/RWXBioFuge/edit/master/ArduinoCode/
-[2]:https://github.com/PieterVanBoheemen/RWXBioFuge/edit/master/Docs/Assembly/04-Final.md
+[1]:https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/ArduinoCode/
+[2]:https://github.com/PieterVanBoheemen/RWXBioFuge/blob/master/Docs/Assembly/04-Final.md

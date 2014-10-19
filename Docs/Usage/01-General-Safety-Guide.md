@@ -5,7 +5,7 @@ A microcentrifuge like the RWXBioFuge is a machine that is used in a lab to sepe
 
 For example when seperating liquids from solids, the liquid solution on top of the solids after centrifugation is called the "supernatant". The solids at the bottom of the tube the "pellet".
 
-A typical microcentrifuge has a maximum speed of about 13,000 to 14,000 rpm (revolutions per minute). 
+A typical microcentrifuge has a maximum speed of about 13,000 to 14,000 rpm (revolutions per minute). The RWXBioFuge may go much faster, but it's up to you whether you choose too.
 
 Take the following guidelines into account when using 1.5 or 2 mL microcentrifuge tubes:
 
@@ -23,7 +23,7 @@ Take the following guidelines into account when using 1.5 or 2 mL microcentrifug
 
 - Place the balanced tubes at the exact opposite position of eachother in the rotor.
 
-- When using 0.5 ml microcentrifuge (PCR) tubes, put them inside of a 1.5 ml tube.
+- When using 0.5 ml or smaller microcentrifuge (PCR) tubes, put them inside of a 1.5 ml tube.
 
 - Whenever the machine starts vibrating heavily or shaking, press the Stop button immediately.
 

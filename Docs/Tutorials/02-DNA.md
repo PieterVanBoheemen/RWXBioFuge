@@ -1,7 +1,7 @@
 02 DNA Extraction
 =================
 
-This procedure learns you how to isolate DNA from biological samples like saliva. Basically what we will do is open up the cells with soap, deteriate proteins with salt and precipitate the DNA with alcohol. Using the centrifuge, the DNA will stick to the bottom of our tube for us to get rid of the rest.
+This procedure will teach you how to isolate DNA from biological samples like saliva. Basically what we will do is open up the cells with soap, deteriate proteins with salt and precipitate the DNA with alcohol. Using the centrifuge, the DNA will stick to the bottom of our tube for us to get rid of the rest.
 
 ### Materials
 - Dish soap, hand soap or shampoo
